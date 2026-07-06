@@ -80,6 +80,23 @@
   }
   .btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px -8px var(--accent)}
   .btn:active{transform:translateY(0)}
+  .difficulty{margin-bottom:20px}
+  .difficulty .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .seg{
+    display:inline-flex;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:11px;padding:4px;gap:4px;
+  }
+  .seg button{
+    font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);
+    background:transparent;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;
+    transition:color .15s ease,background .15s ease;
+  }
+  .seg button:hover{color:var(--text)}
+  .seg button.active{
+    color:#06210d;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 4px 14px -6px var(--accent);
+  }
   .keys{margin-top:18px;display:flex;gap:6px;justify-content:center;color:var(--muted);font-size:12px;align-items:center;flex-wrap:wrap}
   kbd{
     font-family:inherit;background:var(--panel-2);border:1px solid var(--border);
@@ -122,6 +139,14 @@
         <div>
           <h2 id="ov-title">Ready to play?</h2>
           <p id="ov-text">Guide the snake to the food. Each bite makes you longer and faster.</p>
+          <div class="difficulty">
+            <div class="label">Difficulty</div>
+            <div class="seg" id="difficulty" role="group" aria-label="Difficulty">
+              <button data-diff="slow">Slow</button>
+              <button data-diff="normal" class="active">Normal</button>
+              <button data-diff="fast">Fast</button>
+            </div>
+          </div>
           <button class="btn" id="start-btn">Start Game</button>
           <div class="keys">
             <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
@@ -152,6 +177,14 @@
   const GRID = 20;                 // cells per side
   const CELL = canvas.width / GRID; // pixel size of a cell
 
+  // Difficulty presets: base speed (cells/sec), ramp per point, and speed cap
+  const DIFFICULTIES = {
+    slow:   {base:5,  ramp:0.25, cap:11},
+    normal: {base:7,  ramp:0.35, cap:16},
+    fast:   {base:10, ramp:0.5,  cap:22}
+  };
+  let difficulty = 'normal';
+
   // Game state
   let snake, dir, nextDir, food, score, best, speed, running, paused, alive;
   let acc = 0, last = 0, popT = 0, foodPop = 0;
@@ -164,7 +197,7 @@
     dir = {x:1,y:0};
     nextDir = {x:1,y:0};
     score = 0;
-    speed = 7;            // cells per second (grows with score)
+    speed = DIFFICULTIES[difficulty].base; // cells per second (grows with score)
     alive = true;
     paused = false;
     placeFood();
@@ -219,7 +252,8 @@
       score++;
       scoreEl.textContent = score;
       popT = 1;
-      speed = Math.min(16, 7 + score * 0.35); // ramp difficulty, capped
+      const d = DIFFICULTIES[difficulty];
+      speed = Math.min(d.cap, d.base + score * d.ramp); // ramp difficulty, capped
       placeFood();
     } else {
       snake.pop();
@@ -329,6 +363,15 @@
     else if (e.key === 'Enter'){ startGame(); }
   });
   startBtn.addEventListener('click', startGame);
+
+  // difficulty selector
+  const diffGroup = document.getElementById('difficulty');
+  diffGroup.addEventListener('click', e => {
+    const b = e.target.closest('button[data-diff]');
+    if (!b) return;
+    difficulty = b.dataset.diff;
+    diffGroup.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+  });
 
   // touch / swipe
   let tsx=0, tsy=0;
